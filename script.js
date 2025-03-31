@@ -5,6 +5,28 @@ let maxScroll = 0;
 let isDragging = false;
 let startX, scrollLeft;
 
+// Drag/swipe handling with momentum-like support
+let startClientX = 0;
+let isPointerDown = false;
+
+function startDrag(clientX) {
+  isDragging = true;
+  isPointerDown = true;
+  startClientX = clientX;
+  scrollLeft = carousel.scrollLeft;
+}
+
+function updateDrag(clientX) {
+  if (!isDragging || !isPointerDown) return;
+  const delta = clientX - startClientX;
+  carousel.scrollLeft = scrollLeft - delta;
+}
+
+function stopDrag() {
+  isPointerDown = false;
+  isDragging = false;
+}
+
 function setMaxScroll() {
   maxScroll = carousel.scrollWidth - carousel.clientWidth;
 }
@@ -33,43 +55,21 @@ window.addEventListener('load', () => {
 
 window.addEventListener('resize', setMaxScroll);
 
-// Drag support for desktop
-carousel.addEventListener('mousedown', (e) => {
-  isDragging = true;
-  startX = e.pageX - carousel.offsetLeft;
-  scrollLeft = carousel.scrollLeft;
-});
+// Desktop
+carousel.addEventListener('mousedown', (e) => startDrag(e.clientX));
+carousel.addEventListener('mousemove', (e) => updateDrag(e.clientX));
+carousel.addEventListener('mouseup', stopDrag);
+carousel.addEventListener('mouseleave', stopDrag);
 
-carousel.addEventListener('mouseleave', () => {
-  isDragging = false;
-});
-
-carousel.addEventListener('mouseup', () => {
-  isDragging = false;
-});
-
-carousel.addEventListener('mousemove', (e) => {
-  if (!isDragging) return;
-  e.preventDefault();
-  const x = e.pageX - carousel.offsetLeft;
-  const walk = (x - startX) * 1.5;
-  carousel.scrollLeft = scrollLeft - walk;
-});
-
-// Swipe support for mobile
+// Mobile
 carousel.addEventListener('touchstart', (e) => {
-  isDragging = true;
-  startX = e.touches[0].pageX;
-  scrollLeft = carousel.scrollLeft;
+  if (e.touches.length === 1) {
+    startDrag(e.touches[0].clientX);
+  }
 });
-
-carousel.addEventListener('touchend', () => {
-  isDragging = false;
-});
-
 carousel.addEventListener('touchmove', (e) => {
-  if (!isDragging) return;
-  const x = e.touches[0].pageX;
-  const walk = (x - startX) * 1.5;
-  carousel.scrollLeft = scrollLeft - walk;
+  if (e.touches.length === 1) {
+    updateDrag(e.touches[0].clientX);
+  }
 });
+carousel.addEventListener('touchend', stopDrag);
