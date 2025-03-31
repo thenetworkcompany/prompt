@@ -1,65 +1,42 @@
 const carousel = document.getElementById('carousel');
-let direction = 1;
 let scrollAmount = 0;
-let maxScroll = 0;
+let originalChildren = [];
+let cloneCount = 0;
 
-// Drag/swipe handling with momentum-like support
-let isPointerDown = false;
-let startX = 0;
-let scrollStart = 0;
+function cloneAndAppendChildren() {
+  originalChildren = Array.from(carousel.children).slice(0);
+  cloneCount = originalChildren.length;
+  originalChildren.forEach(child => {
+    const clone = child.cloneNode(true);
+    carousel.appendChild(clone);
+  });
+}
 
-function setMaxScroll() {
-  maxScroll = carousel.scrollWidth - carousel.clientWidth;
+function shuffleOriginalChildren() {
+  for (let i = originalChildren.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [originalChildren[i], originalChildren[j]] = [originalChildren[j], originalChildren[i]];
+  }
+  originalChildren.forEach(child => carousel.appendChild(child));
 }
 
 function animateCarousel() {
-  if (!isDragging) {
-    scrollAmount += direction * 1.2;
+  scrollAmount += 2.03;
+  carousel.scrollTo({
+    left: scrollAmount,
+    behavior: 'auto'
+  });
 
-    if (scrollAmount >= maxScroll || scrollAmount <= 0) {
-      direction *= -1;
-    }
-
-    carousel.scrollTo({
-      left: scrollAmount,
-      behavior: 'auto'
-    });
+  if (scrollAmount >= carousel.scrollWidth / 2) {
+    shuffleOriginalChildren();
+    scrollAmount = 0;
+    carousel.scrollTo({ left: 0, behavior: 'auto' });
   }
 
   requestAnimationFrame(animateCarousel);
 }
 
 window.addEventListener('load', () => {
-  setMaxScroll();
+  cloneAndAppendChildren();
   requestAnimationFrame(animateCarousel);
 });
-
-window.addEventListener('resize', setMaxScroll);
-
-function startDrag(e) {
-  isPointerDown = true;
-  startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-  scrollStart = carousel.scrollLeft;
-  carousel.classList.add('dragging');
-}
-
-function duringDrag(e) {
-  if (!isPointerDown) return;
-  const currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-  const deltaX = currentX - startX;
-  carousel.scrollLeft = scrollStart - deltaX;
-}
-
-function endDrag() {
-  isPointerDown = false;
-  carousel.classList.remove('dragging');
-}
-
-carousel.addEventListener('mousedown', startDrag);
-carousel.addEventListener('mousemove', duringDrag);
-carousel.addEventListener('mouseup', endDrag);
-carousel.addEventListener('mouseleave', endDrag);
-
-carousel.addEventListener('touchstart', startDrag, { passive: true });
-carousel.addEventListener('touchmove', duringDrag, { passive: true });
-carousel.addEventListener('touchend', endDrag);
