@@ -2,30 +2,11 @@ const carousel = document.getElementById('carousel');
 let direction = 1;
 let scrollAmount = 0;
 let maxScroll = 0;
-let isDragging = false;
-let startX, scrollLeft;
 
 // Drag/swipe handling with momentum-like support
-let startClientX = 0;
 let isPointerDown = false;
-
-function startDrag(clientX) {
-  isDragging = true;
-  isPointerDown = true;
-  startClientX = clientX;
-  scrollLeft = carousel.scrollLeft;
-}
-
-function updateDrag(clientX) {
-  if (!isDragging || !isPointerDown) return;
-  const delta = clientX - startClientX;
-  carousel.scrollLeft = scrollLeft - delta;
-}
-
-function stopDrag() {
-  isPointerDown = false;
-  isDragging = false;
-}
+let startX = 0;
+let scrollStart = 0;
 
 function setMaxScroll() {
   maxScroll = carousel.scrollWidth - carousel.clientWidth;
@@ -55,21 +36,30 @@ window.addEventListener('load', () => {
 
 window.addEventListener('resize', setMaxScroll);
 
-// Desktop
-carousel.addEventListener('mousedown', (e) => startDrag(e.clientX));
-carousel.addEventListener('mousemove', (e) => updateDrag(e.clientX));
-carousel.addEventListener('mouseup', stopDrag);
-carousel.addEventListener('mouseleave', stopDrag);
+function startDrag(e) {
+  isPointerDown = true;
+  startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+  scrollStart = carousel.scrollLeft;
+  carousel.classList.add('dragging');
+}
 
-// Mobile
-carousel.addEventListener('touchstart', (e) => {
-  if (e.touches.length === 1) {
-    startDrag(e.touches[0].clientX);
-  }
-});
-carousel.addEventListener('touchmove', (e) => {
-  if (e.touches.length === 1) {
-    updateDrag(e.touches[0].clientX);
-  }
-});
-carousel.addEventListener('touchend', stopDrag);
+function duringDrag(e) {
+  if (!isPointerDown) return;
+  const currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+  const deltaX = currentX - startX;
+  carousel.scrollLeft = scrollStart - deltaX;
+}
+
+function endDrag() {
+  isPointerDown = false;
+  carousel.classList.remove('dragging');
+}
+
+carousel.addEventListener('mousedown', startDrag);
+carousel.addEventListener('mousemove', duringDrag);
+carousel.addEventListener('mouseup', endDrag);
+carousel.addEventListener('mouseleave', endDrag);
+
+carousel.addEventListener('touchstart', startDrag, { passive: true });
+carousel.addEventListener('touchmove', duringDrag, { passive: true });
+carousel.addEventListener('touchend', endDrag);
